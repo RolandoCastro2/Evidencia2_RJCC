@@ -1,0 +1,121 @@
+from collections import namedtuple
+import datetime
+import csv
+
+Registros = namedtuple('Registro', 'fecha nombre_cliente descripcion_del_servicio descripcion_del_equipo montoCobrado cargoGenerado')
+registros = {}
+datosLeer = {}
+with open('registrosBorrador4.csv', 'r') as csv_file:
+    lector = csv.reader(csv_file)
+    next(lector)
+    for clave,fecha,nombre_cliente,descripcion_del_servicio,descripcion_del_equipo,montoCobrado,cargoGenerado in lector:
+        datosLeer[int(clave)] = Registros(fecha,nombre_cliente,descripcion_del_servicio,descripcion_del_equipo,montoCobrado,cargoGenerado)
+
+while True:
+    print("****MENU NAVEGABLE****")
+    print("[1] Registrar Servicio")
+    print("[2] Consultar por folio")
+    print("[3] Consultar por fecha")
+    print("[4] Consultar por rango de fechas")
+    print("[5] Salir")
+    opcion = input("Seleccione una opcion: ")
+
+    if opcion == "1":
+        listaServicios = []
+        listaEquipos = []
+        montosCobrados = []
+        cargosGenerados = []
+        print("REGISTRAR SERVICIO")
+        nombre_cliente = input("Nombre del cliente: ")
+
+        while True:
+            try:
+                fecha_str = input("Fecha de la venta en formato (dd/mm/aaaa): ")
+                fecha = datetime.datetime.strptime(fecha_str, "%d/%m/%Y").date()
+            except ValueError:
+                print("El valor de la fecha que fue proporcionado no puede ser procesado")
+                continue
+            except Exception:
+                print("Se ha presentado una excepción")
+                break
+            else:
+                while True:
+                    servicio = input("Servicio realizado: ")
+                    listaServicios.append(servicio)
+                    descripcion_del_equipo = input("Descripcion del equipo: ")
+                    listaEquipos.append(descripcion_del_equipo)
+                    montoCobrado = float(input("Monto cobrado: "))
+                    montosCobrados.append(montoCobrado)
+                    cargoGenerado = float(input("Cargo Generado: "))
+                    cargosGenerados.append(cargoGenerado)
+                    opcion = input("¿Desea agregar otro servicio? [S] SI [N] NO: ").upper()
+
+                    if opcion == 'N':
+                        break
+
+                registro = Registros(fecha,nombre_cliente,listaServicios,listaEquipos,montosCobrados,cargosGenerados)
+                if registros.keys():
+                    nueva_clave = max(registros.keys()) + 1
+                else:
+                    nueva_clave = 1
+                registros[nueva_clave] = registro
+
+                montoMasIva = sum(montosCobrados)*.16
+                montosCobrados = sum(montosCobrados) + montoMasIva + sum(cargosGenerados)
+
+                #CSV
+                archivo = open("registrosBorrador4.csv","w", newline="")
+                grabador = csv.writer(archivo)
+                grabador.writerow(("Clave", "Fecha", "Nombre", "Servicios", "Equipos", "Montos Cobrados", "Cargos Generados"))
+                grabador.writerows([(clave,dato[0],dato[1],dato[2],dato[3],dato[4],dato[5]) for clave,dato in registros.items()])
+                archivo.close()
+
+                print()
+                print(f"El cliente {nombre_cliente} debe pagar un monto total con IVA incluido ${montosCobrados}")
+                print()
+                print("\nFolio\tFecha\t\tCliente\t\tServicios\tEquipos\t\tMontos Cobrado\tCargo Generado")
+                print("-" * 50)
+                for clave, dato in registros.items():
+                    print(f"{clave}\t{dato[0]}\t{dato[1]}\t\t{dato[2]}\t{dato[3]}\t\t{dato[4]}\t{dato[5]}")
+                    print("-" * 100)
+                    print()
+                break
+
+    if opcion == "2":
+        consulta = int(input("Ingrese el folio: "))
+        while True:
+            for clave, dato in datosLeer.items():
+                if clave == consulta:
+                    print(f"El folio es: {clave}")
+                    print(f"Su fecha de venta es: {fecha}")
+                    print("-" * 55)
+                    print("\nFolio\tFecha\t\tCliente\t\tServicios\tEquipos\t\tMontos Cobrado\tCargo Generado")
+                    print(f"{clave}\t{dato[0]}\t{dato[1]}\t\t{dato[2]}\t{dato[3]}\t\t{dato[4]}\t{dato[5]}")
+                    print("-" * 100)
+                    print()
+            break
+
+
+    if opcion == "3":
+        _fecha = input("Fecha de la venta en formato (aaaa-mm-dd): ")
+        while True:
+            for dato in datosLeer.values():
+                if dato[0] == _fecha:
+                    print("\nFolio\tFecha\t\tCliente\t\tServicios\tEquipos\t\tMontos Cobrado\tCargo Generado")
+                    print(f"{clave}\t{dato[0]}\t{dato[1]}\t\t{dato[2]}\t{dato[3]}\t\t{dato[4]}\t{dato[5]}")
+                    print("-" * 100)
+            break
+
+    if opcion =="4":
+        fecha1 = input("Ingrese la primer fecha: (aaaa-mm-dd) ")
+        fecha2 = input("Ingrese la segunda fecha: (aaaa-mm-dd) ")
+        while True:
+            for dato in datosLeer.values():
+                if dato[0]>=fecha1 and dato[0]<=fecha2:
+                    print("\nFolio\tFecha\t\tCliente\t\tServicios\tEquipos\t\tMontos Cobrado\tCargo Generado")
+                    print(f"{clave}\t{dato[0]}\t{dato[1]}\t\t{dato[2]}\t{dato[3]}\t\t{dato[4]}\t{dato[5]}")
+                    print("-" * 100)
+            break
+
+    if opcion == "5":
+        break
